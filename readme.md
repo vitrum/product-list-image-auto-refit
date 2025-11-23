@@ -26,3 +26,10 @@ To address this issue, we propose leveraging JavaScript for image content recogn
 -->
 ![Optimized Image Display Effect / Technical Implementation Diagram](images/optimized-display.png)
 
+
+## CSS Image Background
+The ultimately effective technology here is the position control of the image background.
+
+![CSS Image Background](images/background.png)
+
+
