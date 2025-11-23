@@ -1,4 +1,4 @@
-# Product List Image Layout Optimization
+# Product-list-image-auto-refit For Product List Image Layout Optimization
 ## Overview
 This document outlines a technical solution to address inconsistent display issues of product images on the product list page, aiming to optimize the visual presentation of product images through JavaScript-based content recognition and CSS-driven layout adjustment.
 
@@ -25,3 +25,4 @@ To address this issue, we propose leveraging JavaScript for image content recogn
 替换说明：同上，可根据实际需求修改alt文本和图片路径
 -->
 ![Optimized Image Display Effect / Technical Implementation Diagram](images/optimized-display.png)
+

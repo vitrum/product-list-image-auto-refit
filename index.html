@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>产品图轮廓处理与居中展示</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -105,7 +106,7 @@
             background: #f8f9fa;
             border-radius: 6px;
             border-left: 4px solid #409eff;
-            max-height: 300px;
+            max-height: 1000px;
             overflow-y: auto;
         }
 
@@ -177,9 +178,58 @@
             border-radius: 6px;
 
         }
+        /* GitHub右上角标签核心样式 */
+        .github-corner {
+            position: fixed; /* 固定在视口右上角 */
+            top: 0;
+            right: 0;
+            z-index: 9999; /* 确保不被其他元素遮挡 */
+            text-decoration: none;
+        }
+
+        .github-corner__label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background-color: #161b22; /* GitHub深色主题色 */
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 0 0 0 8px; /* 仅左下角圆角，贴合右上角视觉 */
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            transition: background-color 0.2s ease;
+        }
+
+        /* hover悬浮效果 */
+        .github-corner__label:hover {
+            background-color: #21262d;
+        }
+
+        /* 图标样式 */
+        .github-corner__icon {
+            font-size: 18px;
+        }
+        @media (max-width: 480px) {
+            .github-corner__label {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+            .github-corner__icon {
+                font-size: 14px;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- GitHub右上角标签 -->
+    <a href="https://github.com/vitrum/product-list-image-auto-refit" target="_blank" class="github-corner">
+        <div class="github-corner__label">
+            <i class="fab fa-github github-corner__icon"></i>
+            View on GitHub
+        </div>
+    </a>
     <div class="container">
         <!-- 上传区域 -->
         <div class="upload-area" id="uploadArea">
