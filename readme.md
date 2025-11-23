@@ -15,7 +15,7 @@ On the product list page, images often display inconsistently due to variations 
 To address this issue, we propose leveraging JavaScript for image content recognition and CSS for dynamic layout adjustment, following the logic below:
 1. **Image Content Recognition**: If a product image features a transparent or solid-color background with no text interference, use JavaScript to frame the product within the image and calculate the boundary values between the frame and the image edges.
 
-[Image Content Recognition Example](images/recognition.png)
+![Image Content Recognition Example](images/recognition.png)
 
 2. **Layout Adjustment**: During front-end rendering, utilize CSS background image scaling and offset properties to adjust the product’s position within the display frame, ensuring a visually comfortable layout for all product images.
 
