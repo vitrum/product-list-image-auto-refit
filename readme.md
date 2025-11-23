@@ -2,6 +2,8 @@
 ## Overview
 This document outlines a technical solution to address inconsistent display issues of product images on the product list page, aiming to optimize the visual presentation of product images through JavaScript-based content recognition and CSS-driven layout adjustment.
 
+[Online Demo Page](https://vitrum.github.io/product-list-image-auto-refit/)
+
 ## Problem Statement
 On the product list page, images often display inconsistently due to variations in shooting timelines and sources—with some products appearing overly large in the frame and others excessively small—detracting from the visual experience for end users.
 
