@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>产品图轮廓处理与居中展示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft Yahei', sans-serif;
+        }
+
+        body {
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .upload-area {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 2px dashed #ccc;
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .upload-area:hover {
+            border-color: #409eff;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .upload-text {
+            color: #666;
+            font-size: 16px;
+        }
+
+        /* 参数调节面板样式 */
+        .param-control {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #67c23a;
+        }
+
+        .param-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .param-item {
+            display: inline-block;
+            margin-right: 15px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+
+        .param-item label {
+            margin-right: 5px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .param-item input {
+            width: 80px;
+            padding: 4px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .apply-btn {
+            padding: 4px 12px;
+            background: #409eff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .apply-btn:hover {
+            background: #66b1ff;
+        }
+
+        .debug-area {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #409eff;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .debug-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .debug-item {
+            margin: 5px 0;
+            padding: 5px;
+            border-bottom: 1px dashed #eee;
+            font-size: 14px;
+        }
+
+        .canvas-area {
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .canvas-item {
+            border: 1px solid #eee;
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        .canvas-item p {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .preview-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .product-item {
+            width: 300px;
+            height: 300px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background-repeat: no-repeat;
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+            background-position: 0 0;
+            margin-bottom: 100px;
+        }
+
+        .product-item:hover {
+            transform: scale(1.05);
+        }
+
+        .product-name {
+            position: absolute;
+            top: 320px;
+            left: 0;
+            width: 100%;
+            padding: 5px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            font-size: 12px;
+            text-align: center;
+            border-radius: 6px;
+
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 上传区域 -->
+        <div class="upload-area" id="uploadArea">
+            <input type="file" id="fileInput" multiple accept="image/webp,image/jpeg,image/png,image/avif">
+            <div class="upload-text">
+                <p>点击或拖拽文件到此处上传</p>
+                <p style="font-size: 12px; color: #999; margin-top: 5px;">支持格式：webp、jpg、png、avif</p>
+            </div>
+        </div>
+
+        <!-- 参数调节面板 -->
+        <div class="param-control">
+            <div class="param-title">动态边界参数调节</div>
+            <div class="param-group">
+                <div class="param-item">
+                    <label>基础边界比例：</label>
+                    <input type="number" id="basePadding" step="0.01" min="0.5" max="1.0" value="0.95">
+                    <span style="font-size: 12px; color: #999;">(产品默认占容器比例)</span>
+                </div>
+                <div class="param-item">
+                    <label>调节范围：</label>
+                    <input type="number" id="paddingRange" step="0.01" min="0.0" max="0.5" value="0.2">
+                    <span style="font-size: 12px; color: #999;">(比例最大波动值)</span>
+                </div>
+                <div class="param-item">
+                    <label>调节系数：</label>
+                    <input type="number" id="paddingCoeff" step="0.1" min="0.1" max="5.0" value="1.0">
+                    <span style="font-size: 12px; color: #999;">(占比对边界影响程度)</span>
+                </div>
+                <div class="param-item">
+                    <button id="applyParams" class="apply-btn">应用参数</button>
+                </div>
+            </div>
+        </div>
+
+
+
+        
+
+        <!-- 产品图展示区域 -->
+        <div class="preview-area" id="previewArea"></div>
+
+        <!-- 调试信息区域 -->
+        <div class="debug-area">
+            <!-- Canvas轮廓预览区域 -->
+            <div class="canvas-area" id="canvasArea"></div>
+            <div class="debug-title">调试信息</div>
+            <div id="debugContent" class="debug-content"></div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const debugContent = document.getElementById('debugContent');
+        const canvasArea = document.getElementById('canvasArea');
+        const previewArea = document.getElementById('previewArea');
+        
+        // 可调节全局参数
+        let BASE_PADDING_RATIO = 0.95;
+        let PADDING_RANGE = 0.2;
+        let PADDING_COEFFICIENT = 3.0;
+        // 最小缩放比例
+        const MIN_SCALE = 0.2;
+
+        // ===================== 核心封装函数 =====================
+        /**
+         * 计算产品图的缩放比例和偏移值（核心封装函数）
+         * @param {HTMLImageElement} img 图片对象
+         * @param {Object} ratioWeight 黑白占比权重配置
+         * @param {number} ratioWeight.basePadding 基础边界比例
+         * @param {number} ratioWeight.paddingRange 调节范围
+         * @param {number} ratioWeight.paddingCoeff 调节系数
+         * @param {Object} containerSize 展示容器尺寸
+         * @param {number} containerSize.width 容器宽度（像素）
+         * @param {number} containerSize.height 容器高度（像素）
+         * @returns {Object} 处理结果
+         * @returns {boolean} success 是否处理成功
+         * @returns {number} scalePercent 缩放百分比（如120表示缩放120%）
+         * @returns {number} offsetX X轴偏移像素值
+         * @returns {number} offsetY Y轴偏移像素值
+         * @returns {number} blackRatio 黑色像素占比（0-1）
+         * @returns {string} error 错误信息（失败时返回）
+         * @returns {Object} contour 轮廓信息（辅助调试）
+         */
+        function calculateImageLayout(img, ratioWeight, containerSize) {
+            try {
+                // 1. 创建Canvas处理原图（缩小为1/4提高处理速度）
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const scale = 0.25;
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                // 2. 获取像素数据，统计黑白像素+提取轮廓
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const pixels = imageData.data;
+                const width = canvas.width;
+                const height = canvas.height;
+                const totalPixels = width * height;
+
+                let minX = width, maxX = 0, minY = height, maxY = 0;
+                let hasNonBgPixel = false;
+                let blackPixelCount = 0;
+                let whitePixelCount = 0;
+
+                // 识别背景色（左上角像素）
+                const bgR = pixels[0];
+                const bgG = pixels[1];
+                const bgB = pixels[2];
+                const bgA = pixels[3];
+
+                // 遍历像素统计+提取轮廓
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const i = (y * width + x) * 4;
+                        const r = pixels[i];
+                        const g = pixels[i+1];
+                        const b = pixels[i+2];
+                        const a = pixels[i+3];
+
+                        const isBg = (a < 10) || (Math.abs(r - bgR) < 10 && Math.abs(g - bgG) < 10 && Math.abs(b - bgB) < 10 && a > 245);
+                        
+                        if (!isBg) {
+                            hasNonBgPixel = true;
+                            // 更新轮廓边界
+                            if (x < minX) minX = x;
+                            if (x > maxX) maxX = x;
+                            if (y < minY) minY = y;
+                            if (y > maxY) maxY = y;
+                            blackPixelCount++;
+                        } else {
+                            whitePixelCount++;
+                        }
+                    }
+                }
+
+                // 无产品像素时返回失败
+                if (!hasNonBgPixel) {
+                    return {
+                        success: false,
+                        error: '未识别到产品轮廓（全为背景）',
+                        scalePercent: 100,
+                        offsetX: 0,
+                        offsetY: 0,
+                        blackRatio: 0
+                    };
+                }
+
+                // 3. 计算黑白占比
+                const blackRatio = blackPixelCount / totalPixels;
+
+                // 4. 计算动态边界比例
+                let dynamicPaddingRatio = ratioWeight.basePadding - (blackRatio * ratioWeight.paddingRange * ratioWeight.paddingCoeff);
+                dynamicPaddingRatio = Math.max(dynamicPaddingRatio, ratioWeight.basePadding - ratioWeight.paddingRange);
+                dynamicPaddingRatio = Math.min(dynamicPaddingRatio, ratioWeight.basePadding);
+
+                // 5. 还原轮廓到原图尺寸
+                const originalMinX = minX / scale;
+                const originalMaxX = maxX / scale;
+                const originalMinY = minY / scale;
+                const originalMaxY = maxY / scale;
+                const contourWidth = originalMaxX - originalMinX;
+                const contourHeight = originalMaxY - originalMinY;
+
+                // 6. 计算缩放比例
+                const scaleX = (containerSize.width * dynamicPaddingRatio) / contourWidth;
+                const scaleY = (containerSize.height * dynamicPaddingRatio) / contourHeight;
+                // const finalScale = Math.max(Math.min(scaleX, scaleY), MIN_SCALE);
+                const finalScale = Math.min(scaleX, scaleY);
+                const scalePercent = finalScale * 100; // 转换为百分比
+
+                // 7. 计算偏移值
+                const contourCenterX = originalMinX + contourWidth / 2;
+                const contourCenterY = originalMinY + contourHeight / 2;
+                const scaledContourCenterX = contourCenterX * finalScale;
+                const scaledContourCenterY = contourCenterY * finalScale;
+                const containerCenterX = containerSize.width / 2;
+                const containerCenterY = containerSize.height / 2;
+                const offsetX = containerCenterX - scaledContourCenterX;
+                const offsetY = containerCenterY - scaledContourCenterY;
+
+                // 返回处理结果
+                return {
+                    success: true,
+                    scalePercent: parseFloat(scalePercent.toFixed(2)), // 保留2位小数
+                    offsetX: parseFloat(offsetX.toFixed(2)),
+                    offsetY: parseFloat(offsetY.toFixed(2)),
+                    blackRatio: parseFloat(blackRatio.toFixed(4)),
+                    contour: {
+                        minX: parseFloat(originalMinX.toFixed(2)),
+                        maxX: parseFloat(originalMaxX.toFixed(2)),
+                        minY: parseFloat(originalMinY.toFixed(2)),
+                        maxY: parseFloat(originalMaxY.toFixed(2)),
+                        width: parseFloat(contourWidth.toFixed(2)),
+                        height: parseFloat(contourHeight.toFixed(2))
+                    }
+                };
+            } catch (e) {
+                return {
+                    success: false,
+                    error: e.message,
+                    scalePercent: 100,
+                    offsetX: 0,
+                    offsetY: 0,
+                    blackRatio: 0
+                };
+            }
+        }
+        // ===================== 封装函数结束 =====================
+
+        // 初始化上传事件
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#409eff';
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = '#ccc';
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#ccc';
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFiles(e.dataTransfer.files);
+            }
+        });
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) {
+                handleFiles(fileInput.files);
+            }
+        });
+
+        // 参数调节面板事件
+        const basePaddingInput = document.getElementById('basePadding');
+        const paddingRangeInput = document.getElementById('paddingRange');
+        const paddingCoeffInput = document.getElementById('paddingCoeff');
+        const applyParamsBtn = document.getElementById('applyParams');
+
+        applyParamsBtn.addEventListener('click', () => {
+            const newBase = parseFloat(basePaddingInput.value) || BASE_PADDING_RATIO;
+            const newRange = parseFloat(paddingRangeInput.value) || PADDING_RANGE;
+            const newCoeff = parseFloat(paddingCoeffInput.value) || PADDING_COEFFICIENT;
+
+            BASE_PADDING_RATIO = Math.max(0.5, Math.min(1.0, newBase));
+            PADDING_RANGE = Math.max(0.0, Math.min(0.5, newRange));
+            PADDING_COEFFICIENT = Math.max(0.1, Math.min(5.0, newCoeff));
+
+            basePaddingInput.value = BASE_PADDING_RATIO.toFixed(2);
+            paddingRangeInput.value = PADDING_RANGE.toFixed(2);
+            paddingCoeffInput.value = PADDING_COEFFICIENT.toFixed(1);
+
+            addDebugInfo(`
+                <div class="debug-item">
+                    <strong>参数已更新：</strong><br>
+                    基础边界比例=${BASE_PADDING_RATIO}，调节范围=${PADDING_RANGE}，调节系数=${PADDING_COEFFICIENT}
+                </div>
+            `);
+        });
+
+        /**
+         * 处理上传的文件
+         * @param {FileList} files 文件列表
+         */
+        function handleFiles(files) {
+            debugContent.innerHTML = '';
+            canvasArea.innerHTML = '';
+            previewArea.innerHTML = '';
+
+            Array.from(files).forEach((file, index) => {
+                const fileType = file.type;
+                if (!['image/webp', 'image/jpeg', 'image/png', 'image/avif'].includes(fileType)) {
+                    addDebugInfo(`文件${index+1}：${file.name} - 不支持的格式，仅支持webp/jpg/png/avif`, 'error');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => {
+                        processImageUI(img, file.name, index); // 处理UI渲染
+                    };
+                    img.onerror = () => {
+                        addDebugInfo(`文件${index+1}：${file.name} - 图片加载失败`, 'error');
+                    };
+                    img.src = e.target.result;
+                };
+                reader.onerror = () => {
+                    addDebugInfo(`文件${index+1}：${file.name} - 文件读取失败`, 'error');
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        /**
+         * 处理图片并渲染UI（调用封装函数+渲染）
+         * @param {HTMLImageElement} img 图片对象
+         * @param {string} fileName 文件名
+         * @param {number} index 索引
+         */
+        function processImageUI(img, fileName, index) {
+            // 定义容器尺寸（可动态传入）
+            const containerSize = {
+                width: 300,
+                height: 300
+            };
+
+            // 定义黑白占比权重配置
+            const ratioWeight = {
+                basePadding: BASE_PADDING_RATIO,
+                paddingRange: PADDING_RANGE,
+                paddingCoeff: PADDING_COEFFICIENT
+            };
+
+            // 调用核心封装函数
+            const layoutResult = calculateImageLayout(img, ratioWeight, containerSize);
+
+            // 处理失败逻辑
+            if (!layoutResult.success) {
+                addDebugInfo(`图片${index+1}：${fileName} - ${layoutResult.error}`, 'error');
+                return;
+            }
+
+            // 提取封装函数返回的关键值
+            const { scalePercent, offsetX, offsetY, blackRatio, contour } = layoutResult;
+            const finalScale = scalePercent / 100; // 转换回缩放比例
+            const scaledImgWidth = img.width * finalScale;
+            const scaledImgHeight = img.height * finalScale;
+
+            // 绘制Canvas预览（保留原功能）
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const canvasScale = 0.25;
+            canvas.width = img.width * canvasScale;
+            canvas.height = img.height * canvasScale;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            // 重新获取像素绘制轮廓（仅用于预览）
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const pixels = imageData.data;
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    const i = (y * canvas.width + x) * 4;
+                    const r = pixels[i];
+                    const g = pixels[i+1];
+                    const b = pixels[i+2];
+                    const a = pixels[i+3];
+                    const bgR = pixels[0];
+                    const bgG = pixels[1];
+                    const bgB = pixels[2];
+                    const bgA = pixels[3];
+                    const isBg = (a < 10) || (Math.abs(r - bgR) < 10 && Math.abs(g - bgG) < 10 && Math.abs(b - bgB) < 10 && a > 245);
+                    
+                    if (!isBg) {
+                        pixels[i] = 0;
+                        pixels[i+1] = 0;
+                        pixels[i+2] = 0;
+                        pixels[i+3] = 255;
+                    } else {
+                        pixels[i] = 255;
+                        pixels[i+1] = 255;
+                        pixels[i+2] = 255;
+                        pixels[i+3] = 255;
+                    }
+                }
+            }
+            ctx.putImageData(imageData, 0, 0);
+            ctx.strokeStyle = '#ff4444';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(
+                contour.minX * canvasScale - 1, 
+                contour.minY * canvasScale - 1,
+                contour.width * canvasScale + 2,
+                contour.height * canvasScale + 2
+            );
+
+            // 添加Canvas预览到页面
+            const canvasItem = document.createElement('div');
+            canvasItem.className = 'canvas-item';
+            canvasItem.innerHTML = `<p>轮廓预览（${fileName}）<br>黑占比：${(blackRatio*100).toFixed(2)}%</p>`;
+            canvasItem.appendChild(canvas);
+            canvasArea.appendChild(canvasItem);
+
+            // 创建产品展示项（使用封装函数返回的偏移和缩放值）
+            const productItem = document.createElement('div');
+            productItem.className = 'product-item';
+            productItem.style.backgroundImage = `url(${img.src})`;
+            productItem.style.backgroundSize = `${scaledImgWidth}px ${scaledImgHeight}px`;
+            productItem.style.backgroundPosition = `${offsetX}px ${offsetY}px`;
+            productItem.innerHTML = `
+                <div class="product-name">
+                    ${fileName}<br>
+                    <span style="font-size: 10px;">缩放：${scalePercent}% | 黑占比：${(blackRatio*100).toFixed(1)}%</span>
+                </div>
+            `;
+            previewArea.appendChild(productItem);
+
+            // 更新调试信息
+            addDebugInfo(`
+                <div class="debug-item">
+                    <strong>图片${index+1}：${fileName}</strong><br>
+                    原图尺寸：${img.width}x${img.height} | 容器尺寸：${containerSize.width}x${containerSize.height}<br>
+                    黑白像素占比：黑色=${(blackRatio*100).toFixed(2)}% | 白色=${((1-blackRatio)*100).toFixed(2)}%<br>
+                    轮廓信息：minX=${contour.minX}, minY=${contour.minY}, maxX=${contour.maxX}, maxY=${contour.maxY}, 尺寸=${contour.width}x${contour.height}<br>
+                    缩放百分比：${scalePercent}% | 偏移值：X=${offsetX}px, Y=${offsetY}px
+                </div>
+            `);
+        }
+
+        /**
+         * 添加调试信息
+         * @param {string} content 内容
+         * @param {string} type 类型（normal/error）
+         */
+        function addDebugInfo(content, type = 'normal') {
+            const div = document.createElement('div');
+            div.innerHTML = content;
+            if (type === 'error') {
+                div.style.color = '#ff4444';
+                div.style.fontWeight = 'bold';
+            }
+            debugContent.appendChild(div);
+        }
+    </script>
+</body>
+</html>
